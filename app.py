@@ -8,20 +8,36 @@ from solve_maze import MazeSolver
 
 app = Flask(__name__)
 
-maze = np.loadtxt("maze.txt", dtype=int)
+# Load maze data from a text file (assuming the file exists)
+try:
+    maze = np.loadtxt("maze.txt", dtype=int)
+except FileNotFoundError:
+    print("Generating maze")
+    generator = MazeGenerator(50, 50)
+    maze = generator.generate_maze()
+    generator.save_maze("maze.txt")
+    maze = np.loadtxt("maze.txt", dtype=int)
+finally:
+    fig, ax = plt.subplots(figsize=(3, 3), dpi=100)
+    ax.imshow(maze, cmap='binary')
+    ax.set_xticks([]), ax.set_yticks([])
+    ax.set_xticklabels([]), ax.set_yticklabels([])
+    plt.savefig('static/maze.png', bbox_inches='tight', pad_inches=0, dpi=100)
 
 @app.route('/')
 def index():
+    if maze is None:
+        return "Maze data not available. Check if 'maze.txt' exists and contains valid data."
+
+    # Initialize the solver and set start and end points
     solver = MazeSolver(maze)
     solver.set_start((0, 0))
     solver.set_end((maze.shape[0] - 1, maze.shape[1] - 1))
 
+    # Attempt to find a path in the maze
     path = solver.astar()
     if path:
         print("Path found!")
-
-        # Specify the mistakes made by the robot (example)
-        solver.mistakes = [(0, 2, 1, 2), (1, 4, 2, 4)]  # Format: (x1, y1, x2, y2)
 
         # Create the animation
         fig, ax = plt.subplots()
@@ -35,17 +51,16 @@ def index():
         def update(frame):
             x, y = path[frame]
             robot_marker.set_data(y, x)
-            for mistake in solver.mistakes:
-                x1, y1, x2, y2 = mistake
-                ax.plot([y1, y2], [x1, x2], color='y', linestyle='dotted')
             return robot_marker,
 
         ani = FuncAnimation(fig, update, frames=len(path), interval=200, repeat=False)
 
-        # Save the animation as a temporary file
-        ani.save('static/animation.gif', writer='pillow', fps=5)
-        
-        return render_template('index.html')
+        try:
+            # Save the animation as a temporary file
+            ani.save('static/animation.gif', writer='pillow', fps=10)
+            return render_template('index.html')
+        except Exception as e:
+            return f"Error saving animation: {str(e)}"
     else:
         return "No path found."
 

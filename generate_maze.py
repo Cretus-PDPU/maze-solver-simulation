@@ -30,6 +30,10 @@ class MazeGenerator:
                 stack.append((nx, ny))
             else:
                 stack.pop()
+        
+        self.maze[-1, -1] = 0
+        self.maze[-1, -2] = 0
+        self.maze[-2, -1] = 0
 
         return self.maze
 
