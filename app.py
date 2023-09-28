@@ -9,20 +9,17 @@ from solve_maze import MazeSolver
 app = Flask(__name__)
 
 # Load maze data from a text file (assuming the file exists)
-try:
-    maze = np.loadtxt("maze.txt", dtype=int)
-except FileNotFoundError:
-    print("Generating maze")
-    generator = MazeGenerator(50, 50)
-    maze = generator.generate_maze()
-    generator.save_maze("maze.txt")
-    maze = np.loadtxt("maze.txt", dtype=int)
-finally:
-    fig, ax = plt.subplots(figsize=(3, 3), dpi=100)
-    ax.imshow(maze, cmap='binary')
-    ax.set_xticks([]), ax.set_yticks([])
-    ax.set_xticklabels([]), ax.set_yticklabels([])
-    plt.savefig('static/maze.png', bbox_inches='tight', pad_inches=0, dpi=100)
+
+print("Generating maze")
+generator = MazeGenerator(30, 30)
+maze = generator.generate_maze()
+generator.save_maze("maze.txt")
+maze = np.loadtxt("maze.txt", dtype=int)
+fig, ax = plt.subplots(figsize=(3, 3), dpi=100)
+ax.imshow(maze, cmap='binary')
+ax.set_xticks([]), ax.set_yticks([])
+ax.set_xticklabels([]), ax.set_yticklabels([])
+plt.savefig('static/maze.png', bbox_inches='tight', pad_inches=0, dpi=100)
 
 @app.route('/')
 def index():
@@ -53,7 +50,7 @@ def index():
             robot_marker.set_data(y, x)
             return robot_marker,
 
-        ani = FuncAnimation(fig, update, frames=len(path), interval=200, repeat=False)
+        ani = FuncAnimation(fig, update, frames=len(path), interval=50, repeat=False)
 
         try:
             # Save the animation as a temporary file

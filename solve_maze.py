@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import time
 
 class MazeSolver:
     def __init__(self, maze):
@@ -65,7 +66,7 @@ class MazeSolver:
             path.append(current)
         return path[::-1]
 
-    def visualize_solution(self, solution, animation_interval=200):
+    def visualize_solution(self, solution, animation_interval=50):
         fig, ax = plt.subplots()
         ax.imshow(self.maze, cmap='binary')
         ax.set_xticks([]), ax.set_yticks([])
@@ -81,6 +82,7 @@ class MazeSolver:
             def update(frame):
                 x, y = path[frame]
                 robot_marker.set_data(y, x)
+                self.highlight_visited_cells(ax, path[:frame + 1])
                 return robot_marker,
 
             ani = FuncAnimation(fig, update, frames=len(path), interval=animation_interval, repeat=False)
@@ -88,3 +90,25 @@ class MazeSolver:
         else:
             print("No path found.")
             plt.show()
+    
+    def highlight_visited_cells(self, ax, visited_cells):
+        for cell in visited_cells:
+            x, y = cell
+            ax.add_patch(plt.Rectangle((y - 0.5, x - 0.5), 1, 1, color='yellow', alpha=0.5))
+            plt.pause(0.1)
+
+
+if __name__ == "__main__":
+    rows, cols = 50, 50  # 
+
+    maze = np.loadtxt("maze.txt", dtype=int)
+
+    solver = MazeSolver(maze)
+    solver.set_start((0, 0))
+    solver.set_end((rows - 1, cols - 1))
+    solution = solver.astar()
+
+    if solution:
+        solver.visualize_solution(solution)
+    else:
+        print("No path found.")
