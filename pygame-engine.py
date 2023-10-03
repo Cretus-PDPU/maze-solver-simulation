@@ -1,6 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+import pygame
 import time
 
 class MazeSolver:
@@ -10,6 +9,11 @@ class MazeSolver:
         self.start = None
         self.end = None
         self.robot = None
+
+        pygame.init()
+        self.screen = pygame.display.set_mode((self.cols * 20, self.rows * 20))
+        pygame.display.set_caption("Maze Solver")
+        self.clock = pygame.time.Clock()
 
     def set_start(self, start):
         self.start = start
@@ -66,40 +70,51 @@ class MazeSolver:
             path.append(current)
         return path[::-1]
 
-    def visualize_solution(self, solution, animation_interval=0.5):
-        fig, ax = plt.subplots()
-        ax.imshow(self.maze, cmap='binary')
-        ax.set_xticks([]), ax.set_yticks([])
-
-        # Show starting and ending points with larger markers
-        ax.plot(self.start[1], self.start[0], marker='s', color='g', markersize=10)
-        ax.plot(self.end[1], self.end[0], marker='s', color='r', markersize=10)
-
+    def visualize_solution(self, solution):
         if solution:
             path = np.array(solution)
-            robot_marker, = ax.plot([], [], marker='o', color='b', markersize=15)
 
-            def update(frame):
-                x, y = path[frame]
-                robot_marker.set_data(y, x)
-                self.highlight_visited_cells(ax, path[:frame + 1])
-                return robot_marker,
+            robot_pos = path[0]  # Initialize robot position
 
-            ani = FuncAnimation(fig, update, frames=len(path), interval=animation_interval, repeat=False)
-            plt.show()
+            while True:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        return
+
+                self.screen.fill((255, 255, 255))  # Clear the screen
+                self.draw_maze()
+                self.draw_trail(path[:np.where((path == robot_pos).all(axis=1))[0][-1] + 1], (255, 0, 0))
+                self.draw_robot(robot_pos)
+                pygame.display.flip()
+
+                if len(path) > 1:
+                    robot_pos = path[1]  # Move the robot to the next position
+                    path = path[1:]
+
+                self.clock.tick(30)  # Adjust the frame rate
+
         else:
             print("No path found.")
-            plt.show()
-    
-    def highlight_visited_cells(self, ax, visited_cells):
-        for cell in visited_cells:
-            x, y = cell
-            ax.add_patch(plt.Rectangle((y - 0.5, x - 0.5), 1, 1, color='yellow', alpha=0.5))
-            plt.pause(0.1)
 
+    def draw_maze(self):
+        for i in range(self.rows):
+            for j in range(self.cols):
+                color = (0, 0, 0) if self.maze[i, j] == 1 else (255, 255, 255)
+                pygame.draw.rect(self.screen, color, pygame.Rect(j * 20, i * 20, 20, 20))
+
+    def draw_robot(self, position):
+        x, y = position
+        pygame.draw.circle(self.screen, (0, 0, 255), (y * 20 + 10, x * 20 + 10), 8)
+
+    def draw_trail(self, path, color):
+        for i in range(len(path) - 1):
+            start = (path[i][1] * 20 + 10, path[i][0] * 20 + 10)
+            end = (path[i + 1][1] * 20 + 10, path[i + 1][0] * 20 + 10)
+            pygame.draw.line(self.screen, color, start, end, 2)
 
 if __name__ == "__main__":
-    rows, cols = 50, 50  # 
+    rows, cols = 50, 50
 
     maze = np.loadtxt("maze.txt", dtype=int)
 
